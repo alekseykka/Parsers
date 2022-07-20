@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import csv
+import os
 
 PARAMS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,'
@@ -53,17 +54,26 @@ def open_all_catigories_json():
     return all_catigories
 
 
+def chek_directory():
+    folder_name = f"data"
+
+    if os.path.exists(folder_name):
+        print("Папка уже существует!")
+    else:
+        os.mkdir(folder_name)
+
+
 def save_catigories_html():
+    chek_directory()
     count = len(all_catigories)
     for key, value in all_catigories.items():
         src = requests.get(value, params=PARAMS).text
+
         with open(f'./data/{key}.html', 'w', encoding='utf-8') as file:
             file.write(src)
 
         open_catigories(key)
-        print(f'Осталось {count}')
-        if count == 1:
-            pass
+        print(f'Работа с {key}')
         count -= 1
 
 
@@ -126,11 +136,3 @@ all_catigories = search_all_catigories(src)
 save_all_catigories_json(all_catigories)
 all_catigories = open_all_catigories_json()
 save_catigories_html()
-
-#
-#
-
-#
-#
-
-#
