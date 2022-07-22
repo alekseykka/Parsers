@@ -102,7 +102,11 @@ def collection_page(links: list):
     save_json_festivals(fest_list_result)
 
 
-if __name__ == '__main__':
+def main():
     chek_directory_data()
     save_page_index_html()
     collection_all_liks()
+
+
+if __name__ == '__main__':
+    main()
