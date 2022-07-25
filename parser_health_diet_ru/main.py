@@ -12,46 +12,12 @@ PARAMS = {
 }
 
 
-def save_index_html():
-    url = 'https://health-diet.ru/table_calorie/'
-    src = requests.get(url, params=PARAMS).text
-    with open('index.html', 'w', encoding='utf-8') as file:
-        file.write(src)
-
-
-def open_index_html():
-    with open('index.html', encoding='utf-8') as file:
-        src = file.read()
-    return src
-
-
 def text_correction(name: str):
     rep = [',', ' ', '-', "'"]
     for item in rep:
         if item in name:
             name = name.replace(item, '_')
     return name
-
-
-def search_all_catigories(src):
-    catigories = dict()
-    soup = BeautifulSoup(src, 'lxml')
-    all_catigories = soup.find_all(class_='mzr-tc-group-item-href')
-    for item in all_catigories:
-        name = text_correction(item.text)
-        catigories[name] = 'https://health-diet.ru' + item.get('href')
-    return catigories
-
-
-def save_all_catigories_json(all_catigories):
-    with open('all_catigories.json', 'w', encoding='utf-8') as file:
-        json.dump(all_catigories, file, indent=4, ensure_ascii=False)
-
-
-def open_all_catigories_json():
-    with open('all_catigories.json', encoding='utf-8') as file:
-        all_catigories = json.load(file)
-    return all_catigories
 
 
 def chek_directory():
@@ -63,27 +29,54 @@ def chek_directory():
         os.mkdir(folder_name)
 
 
-def save_catigories_html():
-    chek_directory()
-    count = len(all_catigories)
-    for key, value in all_catigories.items():
+def save_file(name: str, form: str, data: str | tuple | list):
+    with open(f'{name}.{form}', 'a', encoding='utf-8', newline='') as file:
+        if form == "html":
+            file.write(data)
+        elif form == "csv":
+            writer = csv.writer(file)
+            writer.writerow(data)
+        elif form == "json":
+            json.dump(data, file, indent=4, ensure_ascii=False)
+
+
+def open_file(name: str, form: str):
+    with open(f'{name}.{form}', encoding='utf-8') as file:
+        if form == "html":
+            return file.read()
+        elif form == "json":
+            return json.load(file)
+
+
+def search_all_catigories(src: str):
+    catigories = dict()
+    soup = BeautifulSoup(src, 'lxml')
+    all_catigories = soup.find_all(class_='mzr-tc-group-item-href')
+    for item in all_catigories:
+        name = text_correction(item.text)
+        catigories[name] = 'https://health-diet.ru' + item.get('href')
+    return catigories
+
+
+def get_page():
+    url = 'https://health-diet.ru/table_calorie/'
+    src = requests.get(url, params=PARAMS).text
+
+    save_file("index", "html", src)
+
+    url_catigories = search_all_catigories(src)
+
+    for key, value in url_catigories.items():
         src = requests.get(value, params=PARAMS).text
 
-        with open(f'./data/{key}.html', 'w', encoding='utf-8') as file:
-            file.write(src)
+        save_file(f'./data/{key}', "html", src)
 
-        open_catigories(key)
-        print(f'Работа с {key}')
-        count -= 1
-
-
-def open_catigories(name: str):
-    with open(f'./data/{name}.html', encoding='utf-8') as file:
-        src = file.read()
-    collection_categories(src, name)
+        src = open_file(f'./data/{key}', "html")
+        print(value)
+        get_info(src, key)
 
 
-def collection_categories(src: str, name: str):
+def get_info(src: str, name: str):
     soup = BeautifulSoup(src, 'lxml')
     alert_block = soup.find(class_="uk-alert-danger")
     if alert_block is not None:
@@ -96,9 +89,7 @@ def collection_categories(src: str, name: str):
         fats = table_head[3].text
         carbohydrates = table_head[4].text
 
-        with open(f'./data/{name}.csv', 'w', encoding='utf-8', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow((product, calories, proteins, fats, carbohydrates))
+        save_file(f"./data/{name}", "csv", (product, calories, proteins, fats, carbohydrates))
 
         products_data = soup.find(class_="mzr-tc-group-table").find("tbody").find_all("tr")
 
@@ -122,17 +113,15 @@ def collection_categories(src: str, name: str):
                 }
             )
 
-            with open(f'./data/{name}.csv', 'a', encoding='utf-8', newline='') as file:
-                writer = csv.writer(file)
-                writer.writerow((title, calories, proteins, fats, carbohydrates))
+            save_file(f"./data/{name}", "csv", (title, calories, proteins, fats, carbohydrates))
 
-            with open(f"data/{name}.json", "a", encoding="utf-8") as file:
-                json.dump(product_info, file, indent=4, ensure_ascii=False)
+            save_file(f"./data/{name}", "json", product_info)
 
 
-save_index_html()
-src = open_index_html()
-all_catigories = search_all_catigories(src)
-save_all_catigories_json(all_catigories)
-all_catigories = open_all_catigories_json()
-save_catigories_html()
+def main():
+    chek_directory()
+    get_page()
+
+
+if __name__ == '__main__':
+    main()
