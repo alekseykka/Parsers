@@ -18,7 +18,21 @@ def chek_directory_data():
         os.mkdir(folder_name)
 
 
-def save_page_index_html():
+def save_file(name: str, format: str, data: str | list):
+    with open(f"{name}.{format}", "w", encoding="utf-8") as file:
+        if format == "json":
+            json.dump(data, file, indent=4, ensure_ascii=False)
+        elif format == "html":
+            file.write(data)
+
+
+def open_page_index_html(i: int):
+    with open(f"data/index_{i}.html", encoding='utf-8') as file:
+        src = file.read()
+    return src
+
+
+def get_page():
     for i in range(0, 168, 24):
         url = f"https://www.skiddle.com/festivals/search/?ajaxing=1&sort=0&fest_name=&from_date=" \
               f"20%20Jul%202022&to_date=&maxprice=500&o={i}&bannertitle=July"
@@ -26,15 +40,7 @@ def save_page_index_html():
         req = requests.get(url=url, headers=HEADERS)
         json_data = json.loads(req.text)
         html_response = json_data["html"]
-
-        with open(f"data/index_{i}.html", "w", encoding='utf-8') as file:
-            file.write(html_response)
-
-
-def open_page_index_html(i: int):
-    with open(f"data/index_{i}.html", encoding='utf-8') as file:
-        src = file.read()
-    return src
+        save_file(f"data/index_{i}", "html", html_response)
 
 
 def collection_all_liks():
@@ -49,11 +55,6 @@ def collection_all_liks():
             fest_url = "https://www.skiddle.com" + link_festival
             fests_urls_list.append(fest_url)
     collection_page(fests_urls_list)
-
-
-def save_json_festivals(fest_list_result: list):
-    with open("festivals.json", "w", encoding="utf-8") as file:
-        json.dump(fest_list_result, file, indent=4, ensure_ascii=False)
 
 
 def getting_html_code(link: str):
@@ -99,12 +100,12 @@ def collection_page(links: list):
         except AttributeError:
             print(AttributeError)
 
-    save_json_festivals(fest_list_result)
+    save_file(f"festivals", "json", fest_list_result)
 
 
 def main():
     chek_directory_data()
-    save_page_index_html()
+    get_page()
     collection_all_liks()
 
 
